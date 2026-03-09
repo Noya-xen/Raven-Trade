@@ -203,10 +203,14 @@ async function runAutoTrade() {
                     network: NETWORK,
                 });
 
+                console.log("[+] Menunggu 5 detik sebelum autentikasi (Bypass Limit VPS)...");
+                await new Promise(r => setTimeout(r, 5000));
                 console.log("[+] Mengautentikasi wallet ke Loop Network...");
                 await loop.authenticate();
                 
                 // 2. Tampilkan balance terkini
+                console.log("[+] Menunggu 5 detik sebelum mengambil saldo...");
+                await new Promise(r => setTimeout(r, 5000));
                 const provider = loop.getProvider();
                 const balances = await provider.getHolding();
                 const amuletBalance = balances.find((b: any) => b.instrument_id?.id === 'Amulet');
