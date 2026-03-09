@@ -27,7 +27,7 @@ Auto-Trade Bot untuk platform opsi terdesentralisasi **Raven Market** (yang berj
 
 ### 1. Kloning Repositori
 ```bash
-git clone https://github.com/Noya-xen/raven-auto-trade.git
+git clone https://github.com/Noya-xen/Raven-Trade.git
 cd raven-auto-trade
 ```
 
