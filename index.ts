@@ -8,6 +8,8 @@ const NETWORK = 'testnet'; // Jaringan Canton Loop
 const RATE_LIMIT_PENALTY_MS = 65000; // 65 Detik cooldown
 const VALID_SERIES_IDS = [21]; 
 
+// Map untuk melacak akumulasi poin per akun
+const accountStats: Record<string, { points: number, trades: number, balance: string }> = {};
 function getRandomTradeParams() {
     const sides = ["PUT", "CALL"];
     const randomSide = sides[Math.floor(Math.random() * sides.length)];
@@ -214,7 +216,19 @@ async function runAutoTrade() {
                 const provider = loop.getProvider();
                 const balances = await provider.getHolding();
                 const amuletBalance = balances.find((b: any) => b.instrument_id?.id === 'Amulet');
-                console.log(`[+] Saldo Akun #${i+1}: ${amuletBalance?.total_unlocked_coin || 0} CC Unlocked`);
+                const currentBalance = parseFloat(amuletBalance?.total_unlocked_coin || "0");
+                console.log(`[+] Saldo Akun #${i+1}: ${currentBalance} CC Unlocked`);
+
+                if (currentBalance < 1) {
+                    console.log(`[!] Saldo Akun #${i+1} terlalu rendah (< 1 CC). Melewati putaran ini...`);
+                    continue;
+                }
+
+                // Inisialisasi statistik jika belum ada
+                if (!accountStats[account.PARTY_ID]) {
+                    accountStats[account.PARTY_ID] = { points: 0, trades: 0, balance: "0" };
+                }
+                accountStats[account.PARTY_ID].balance = currentBalance.toString();
 
                 // 3. Bangun strategi acak
                 const { seriesId, side, quantity } = getRandomTradeParams();
@@ -253,6 +267,12 @@ async function runAutoTrade() {
                     }
                 }
                 
+                // Update Statistik
+                if (accountStats[account.PARTY_ID]) {
+                    accountStats[account.PARTY_ID].points += (openTradeData?.pointsEarned || 0);
+                    accountStats[account.PARTY_ID].trades += 1;
+                }
+
                 console.log(`\n[✓] Akun #${i+1} Selesai bertrading dan memanen poin untuk putaran ini.`);
                 
             } catch (err: any) {
@@ -265,6 +285,19 @@ async function runAutoTrade() {
             await new Promise(r => setTimeout(r, RATE_LIMIT_PENALTY_MS));
         }
         
+        // --- Tampilkan Rekapitulasi Putaran ---
+        console.log(`\n\n*====================================================*`);
+        console.log(`|         REKAPITULASI POIN PUTARAN #${round}             |`);
+        console.log(`*====================================================*`);
+        console.log(`| Wallet (ID)         | Trades | Poin  | Sisa Saldo  |`);
+        console.log(`|---------------------|--------|-------|-------------|`);
+        for (const pid in accountStats) {
+            const stats = accountStats[pid];
+            const shortId = pid.substring(0, 15) + "...";
+            console.log(`| ${shortId.padEnd(19)} | ${stats.trades.toString().padEnd(6)} | ${stats.points.toString().padEnd(5)} | ${stats.balance.padEnd(11)} |`);
+        }
+        console.log(`*====================================================*\n`);
+
         round++;
     }
 }
