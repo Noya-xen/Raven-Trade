@@ -1,0 +1,22 @@
+{
+  "name": "raven-auto-trade",
+  "version": "1.0.0",
+  "description": "Auto trade bot for Raven Market using Loop SDK",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "esbuild index.ts --bundle --platform=node --target=node16 --outdir=dist --format=cjs",
+    "start": "npm run build && node dist/index.js"
+  },
+  "dependencies": {
+    "@fivenorth/loop-sdk": "latest",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "node-forge": "^1.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "esbuild": "^0.27.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
