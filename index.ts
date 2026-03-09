@@ -73,6 +73,11 @@ async function executeTrade(quoteData: any, walletId: string) {
         );
         
         console.log(`[+] Menyiapkan Submission interaktif untuk Canton...`);
+        
+        // Jeda WAJIB sebelum Hit Endpoint Prepare Submission (Bypass IP Rate Limit VPS)
+        console.log(`[!] Menunggu ${RATE_LIMIT_PENALTY_MS/1000} detik sebelum prepareSubmission untuk memastikan Canton API siap...`);
+        await new Promise(r => setTimeout(r, RATE_LIMIT_PENALTY_MS));
+
         // Kita menggunakan retry loop karena Canton Server (server_sdk) kadang mempunyai window rate limit yang bertumpuk
         let preparedPayload = null;
         for (let attempt = 1; attempt <= 5; attempt++) {
