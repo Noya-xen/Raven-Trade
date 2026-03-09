@@ -1,4 +1,5 @@
 # 🦅 Raven Market Auto-Trade Bot (Point Gen)
+link projek : https://test.raven.market/
 
 ![Raven Bot Banner](https://img.shields.io/badge/Status-Active-brightgreen) ![Testnet](https://img.shields.io/badge/Network-Canton_Loop_Testnet-blue) ![TypeScript](https://img.shields.io/badge/Language-TypeScript-blue)
 
@@ -20,7 +21,7 @@ Auto-Trade Bot untuk platform opsi terdesentralisasi **Raven Market** (yang berj
 
 ## 🚀 Prasyarat Instalasi
 1. Pastikan Anda telah menginstal [Node.js](https://nodejs.org/en) (Disarankan v16+).
-2. Memiliki saldo testnet CC (Canton Coin) dan Loop `PRIVATE_KEY` serta `PARTY_ID`. (Dapatkan di [Loop Wallet](https://loop.fivenorth.io/)).
+2. Memiliki saldo testnet CC (Canton Coin) dan Loop `PRIVATE_KEY` serta `PARTY_ID`. (Dapatkan di [Loop Wallet](https://testnet.cantonloop.com/sign-in?continue=%2Fdashboard)).
 
 ## 🛠️ Cara Setup & Menjalankan
 
