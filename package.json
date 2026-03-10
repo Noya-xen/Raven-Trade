@@ -4,14 +4,17 @@
   "description": "Auto trade bot for Raven Market using Loop SDK",
   "main": "dist/index.js",
   "scripts": {
-    "build": "esbuild index.ts --bundle --platform=node --target=node16 --outdir=dist --format=cjs",
-    "start": "npm run build && node dist/index.js"
+    "build:trade": "esbuild index.ts --bundle --platform=node --target=node16 --outdir=dist --format=cjs",
+    "build:faucet": "esbuild faucet.ts --bundle --platform=node --target=node16 --outdir=dist --format=cjs",
+    "start": "npm run build:trade && node dist/index.js",
+    "faucet": "npm run build:faucet && node dist/faucet.js"
   },
   "dependencies": {
     "@fivenorth/loop-sdk": "latest",
     "axios": "^1.6.2",
     "dotenv": "^16.3.1",
-    "node-forge": "^1.3.1"
+    "node-forge": "^1.3.1",
+    "puppeteer": "^24.38.0"
   },
   "devDependencies": {
     "@types/node": "^25.3.5",

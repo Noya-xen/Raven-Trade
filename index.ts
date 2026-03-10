@@ -4,8 +4,10 @@ import * as dotenv from 'dotenv';
 import * as fs from 'fs';
 dotenv.config();
 
-const NETWORK = 'testnet'; // Jaringan Canton Loop
-const RATE_LIMIT_PENALTY_MS = 65000; // 65 Detik cooldown
+import { config } from './config';
+
+const NETWORK = config.NETWORK; // Jaringan Canton Loop
+const RATE_LIMIT_PENALTY_MS = config.RATE_LIMIT_PENALTY_MS; // 65 Detik cooldown
 const VALID_SERIES_IDS = [24];
 
 // Map untuk melacak akumulasi poin per akun
@@ -255,7 +257,7 @@ async function runAutoTrade() {
                 loop.init({
                     privateKey: account.PRIVATE_KEY,
                     partyId: account.PARTY_ID,
-                    network: NETWORK,
+                    network: NETWORK as any,
                 });
 
                 console.log("[+] Menunggu 5 detik sebelum autentikasi (Bypass Limit VPS)...");
