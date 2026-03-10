@@ -55,11 +55,33 @@ Copy file sampel atau buat file baru bernama `accounts.json` di root folder:
 ```
 *(Catatan: Anda bebas menambahkan sebanyak apa pun jumlah Wallet di dalam array tersebut).*
 
-### 4. Mulai Farming!
+### 4. Konfigurasi Claim Faucet & Auto-Sweep (Baru!) 🎁
+Script ini kini memiliki fitur Auto-Claim Faucet dan Auto-Sweep (mengumpulkan hasil faucet otomatis dari banyak akun tuyul ke 1 akun utama).
+
+1. Edit file `config.ts` untuk mengatur alamat penampung CC Anda:
+   - Isi `SWEEP_DESTINATION_PARTY_ID` dengan tujuan Party ID Anda. Jika dibiarkan kosong, bot hanya akan melakukan klaim faucet tanpa melakukan transfer saldo (sweep).
+   - `SWEEP_AMOUNT_TO_KEEP` adalah minimal sisa saldo untuk gas fee di dompet tuyul.
+2. Buat file baru bernama `faucet_accounts.txt`. File ini menggunakan format per-baris:
+   `PRIVATE_KEY|PARTY_ID|@username_telegram`
+   Contoh:
+   ```text
+   2bdf6fa...|2b50de45...::12204...|@noli_ya
+   18aba81...|460b8ba5...::12204...|@akun_keduaku
+   ```
+
+### 5. Mulai Farming!
 Gunakan command bawaan dari `package.json` yang akan membangun TS (menggunakan `esbuild`) dan membuka Main Loop:
+
+**[A] Menjalankan Bot Trade**
 ```bash
 npm run start
 ```
+
+**[B] Menjalankan Bot Auto Faucet (Loop 24 Jam)**
+```bash
+npm run faucet
+```
+*(Catatan: Bot Faucet akan memproses klaim, transfer hasil sweep, lalu secara otomatis masuk ke mode tidur selama 24 jam sebelum mengulangi semuanya kembali pada hari esok)*
 
 ---
 
