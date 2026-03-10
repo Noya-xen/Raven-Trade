@@ -6,7 +6,7 @@ dotenv.config();
 
 const NETWORK = 'testnet'; // Jaringan Canton Loop
 const RATE_LIMIT_PENALTY_MS = 65000; // 65 Detik cooldown
-const VALID_SERIES_IDS = [21];
+const VALID_SERIES_IDS = [24];
 
 // Map untuk melacak akumulasi poin per akun
 const accountStats: Record<string, { points: number, trades: number, balance: string, dailyTrades: number, tradeLimit: number, lastTradeDate: string }> = {};
@@ -34,7 +34,8 @@ async function getMarketQuote(walletId: string, seriesId: any, side: any, quanti
     }, {
         headers: {
             'Content-Type': 'application/json',
-            'wallet_id': walletId
+            'wallet_id': walletId,
+            'x-api-key': '632492f6eb36ad6ca17e49fabb2ef58541ad58d166de2e46d065dc9f75988'
         }
     });
 
@@ -129,13 +130,17 @@ async function executeTrade(quoteData: any, walletId: string) {
         let pointsEarned = 0;
         try {
             const tradeRes = await axios.post('https://testapi.raven.market/trade', {
-                series_id: quoteData.series_id || 21,
+                series_id: quoteData.series_id || 24,
                 trade_type: "BUY",
                 side: quoteData.side || "PUT",
                 quantity: quoteData.quantity || 10,
                 wallet_id: walletId
             }, {
-                headers: { 'Content-Type': 'application/json', 'wallet_id': walletId }
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'wallet_id': walletId,
+                    'x-api-key': '632492f6eb36ad6ca17e49fabb2ef58541ad58d166de2e46d065dc9f75988'
+                }
             });
             console.log(`[✓] History berhasil dicatat! Data:`, JSON.stringify(tradeRes.data));
             positionId = tradeRes.data.position_id;
@@ -301,7 +306,11 @@ async function runAutoTrade() {
                             wallet_id: account.PARTY_ID,
                             position_id: openTradeData.positionId
                         }, {
-                            headers: { 'Content-Type': 'application/json', 'wallet_id': account.PARTY_ID }
+                            headers: { 
+                                'Content-Type': 'application/json', 
+                                'wallet_id': account.PARTY_ID,
+                                'x-api-key': '632492f6eb36ad6ca17e49fabb2ef58541ad58d166de2e46d065dc9f75988'
+                            }
                         });
 
                         console.log(`[✓] Posisi berhasil ditutup! Data:`, JSON.stringify(closeRes.data));
