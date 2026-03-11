@@ -161,7 +161,8 @@ async function executeTrade(quoteData: any, walletId: string) {
                 trade_type: "BUY",
                 side: quoteData.side || "PUT",
                 quantity: quoteData.quantity || 10,
-                wallet_id: walletId
+                wallet_id: walletId,
+                tx_hash: result.command_id
             }, {
                 headers: { 
                     'Content-Type': 'application/json', 
@@ -313,13 +314,34 @@ async function runAutoTrade() {
                 // Update balance di statistik (pengisian awal dihandle di pre-check)
                 accountStats[account.PARTY_ID].balance = currentBalance.toString();
 
-                // 3. Bangun strategi acak
-                const { seriesId, side, quantity } = getRandomTradeParams();
+                // 3 & 4. Bangun strategi acak & Eksekusi
+                let openTradeData: any = null;
+                let activeSeriesId, activeSide, activeQuantity;
 
-                // 4. Eksekusi proses trading BUKA (OPEN)
-                console.log(`\n--- [ FASE 1: BUKA POSISI (OPEN) ] ---`);
-                const quote = await getMarketQuote(account.PARTY_ID, seriesId, side, quantity);
-                const openTradeData = await executeTrade(quote, account.PARTY_ID);
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    const { seriesId, side, quantity } = getRandomTradeParams();
+                    activeSeriesId = seriesId;
+                    activeSide = side;
+                    activeQuantity = quantity;
+
+                    console.log(`\n--- [ FASE 1: BUKA POSISI (OPEN) - Percobaan ${attempt}/3 ] ---`);
+                    try {
+                        const quote = await getMarketQuote(account.PARTY_ID, seriesId, side, quantity);
+                        openTradeData = await executeTrade(quote, account.PARTY_ID);
+                        break; // Sukses, keluar dari loop
+                    } catch (e: any) {
+                        if (e.message && (e.message.includes("Stale Quote") || e.message.includes("Rate Limited"))) {
+                            console.log(`[!] Hit Canton Rate Limit. Menunggu 65 detik sebelum mengambil quote / harga yang baru secara full...`);
+                            await new Promise(r => setTimeout(r, 65000));
+                        } else {
+                            throw e; // Lemparkan error jika bukan masalah rate limit
+                        }
+                    }
+                }
+
+                if (!openTradeData) {
+                    throw new Error("Gagal Buka Posisi karena Canton Rate Limited terus menerus. Posisi dilewati.");
+                }
 
                 // 5. Eksekusi proses trading TUTUP (CLOSE) untuk menggandakan poin
                 if (openTradeData && openTradeData.positionId) {
@@ -327,15 +349,15 @@ async function runAutoTrade() {
                     console.log(`[~] Menunggu ${RATE_LIMIT_PENALTY_MS / 1000} detik sebelum mengeksekusi Close demi mematuhi Canton API...`);
                     await new Promise(r => setTimeout(r, RATE_LIMIT_PENALTY_MS));
 
-                    console.log(`[+] Menjual / Menutup Posisi #${openTradeData.positionId} (Series: ${seriesId}, Side: ${side}, Qty: ${quantity})`);
+                    console.log(`[+] Menjual / Menutup Posisi #${openTradeData.positionId} (Series: ${activeSeriesId}, Side: ${activeSide}, Qty: ${activeQuantity})`);
 
                     // Kita bisa hit API /trade dengan trade_type: "SELL" untuk menutup posisi
                     try {
                         const closeRes = await axios.post('https://testapi.raven.market/trade', {
-                            series_id: seriesId,
+                            series_id: activeSeriesId,
                             trade_type: "SELL",
-                            side: side,
-                            quantity: quantity,
+                            side: activeSide,
+                            quantity: activeQuantity,
                             wallet_id: account.PARTY_ID,
                             position_id: openTradeData.positionId
                         }, {
