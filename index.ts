@@ -36,12 +36,11 @@ async function fetchActiveSeries(walletId: string) {
             }
         });
         
-        const allActive = response.data.filter((s: any) => s.status === 'ACTIVE');
+        const allActive = response.data.filter((s: any) => s.status === 'ACTIVE' && s.put_reserve > 50 && s.call_reserve > 50);
         if (allActive.length > 0) {
             // Urutkan berdasarkan waktu pembuatan (paling baru di atas)
             allActive.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             
-            // Ambil tanggal pembuatan dari series paling terbaru (indeks 0)
             const newestDate = new Date(allActive[0].created_at).toISOString().split('T')[0];
             
             // Saring dan hanya ambil ID yang dibuat pada tanggal yang sama dengan series paling terbaru
