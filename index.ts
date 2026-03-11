@@ -162,7 +162,7 @@ async function executeTrade(quoteData: any, walletId: string) {
         let pointsEarned = 0;
         try {
             const tradeRes = await axios.post('https://testapi.raven.market/trade', {
-                series_id: quoteData.series_id || 24,
+                series_id: quoteData.series_id || VALID_SERIES_IDS[0],
                 trade_type: "BUY",
                 side: quoteData.side || "PUT",
                 quantity: quoteData.quantity || 10,
