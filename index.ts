@@ -179,8 +179,12 @@ async function executeTrade(quoteData: any, walletId: string) {
         }
 
         return { result, positionId, pointsEarned };
-    } catch (error) {
-        console.error(`[X] Gagal melakukan transaksi DAML/Transfer:`, error);
+    } catch (error: any) {
+        if (error.message && (error.message.includes("Stale Quote") || error.message.includes("Rate Limited"))) {
+            // Jangan print stack-trace merah yang menyeramkan karena ini di-handle oleh fitur Retry bot
+        } else {
+            console.error(`[X] Gagal melakukan transaksi DAML/Transfer:`, error);
+        }
         throw error;
     }
 }
