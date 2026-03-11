@@ -120,35 +120,20 @@ async function executeTrade(quoteData: any, walletId: string) {
 
         console.log(`[+] Menyiapkan Submission interaktif untuk Canton...`);
 
-        // Jeda WAJIB sebelum Hit Endpoint Prepare Submission (Bypass IP Rate Limit VPS)
-        console.log(`[!] Menunggu ${RATE_LIMIT_PENALTY_MS / 1000} detik sebelum prepareSubmission untuk memastikan Canton API siap...`);
-        await new Promise(r => setTimeout(r, RATE_LIMIT_PENALTY_MS));
-
-        // Kita menggunakan retry loop karena Canton Server (server_sdk) kadang mempunyai window rate limit yang bertumpuk
+        // Jeda dihapus: karena delay antara /quote dan prepareSubmission akan membuat harga kadaluwarsa (irregular trade) di server Raven Market.
+        
         let preparedPayload = null;
-        for (let attempt = 1; attempt <= 5; attempt++) {
-            console.log(`[+] Mencoba prepareSubmission (Percobaan ${attempt}/5)...`);
-            try {
-                // panggil prepareSubmission
-                preparedPayload = await (provider as any).prepareSubmission(transferPayloadStructure);
+        console.log(`[+] Mencoba prepareSubmission tanpa delay demi mematuhi umur harga (quote)...`);
+        try {
+            // panggil prepareSubmission satu kali saja
+            preparedPayload = await (provider as any).prepareSubmission(transferPayloadStructure);
 
-                if (preparedPayload && preparedPayload.message && preparedPayload.message.includes("Rate Limited")) {
-                    throw new Error("Rate Limited");
-                }
-
-                if (preparedPayload && preparedPayload.transaction_hash) {
-                    break; // Sukses!
-                } else {
-                    console.log(`[DEBUG] Raw Prepare Response tidak valid:`, JSON.stringify(preparedPayload, null, 2));
-                    throw new Error("Gagal mendapatkan transaction_hash");
-                }
-            } catch (error) {
-                if (attempt === 5) {
-                    throw new Error("Gagal mengeksekusi prepareSubmission setelah 5 percobaan. Mohon tunggu beberapa saat sebelum menjalankan script lagi.");
-                }
-                console.log(`[!] Terkena Rate Limit dari Loop Server. Menunggu 65 detik agar penalti reset sebelum mencoba lagi...`);
-                await new Promise(resolve => setTimeout(resolve, 65000));
+            if (preparedPayload && preparedPayload.message && preparedPayload.message.includes("Rate Limited")) {
+                throw new Error("Rate Limited (Message)");
             }
+        } catch (error) {
+            console.log(`[!] Terkena Rate Limit dari Loop Server pada PrepareSubmission. Harus mengambil harga /quote ulang agar valid.`);
+            throw new Error("Dibatalkan agar tidak terjadi irregular trade di Raven Market (Stale Quote).");
         }
 
         if (!preparedPayload || !preparedPayload.transaction_hash) {
