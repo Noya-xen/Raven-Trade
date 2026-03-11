@@ -8,7 +8,7 @@ import { config } from './config';
 
 const NETWORK = config.NETWORK; // Jaringan Canton Loop
 const RATE_LIMIT_PENALTY_MS = config.RATE_LIMIT_PENALTY_MS; // 65 Detik cooldown
-const VALID_SERIES_IDS = [24];
+let VALID_SERIES_IDS = [27];
 
 // Map untuk melacak akumulasi poin per akun
 const accountStats: Record<string, { points: number, trades: number, balance: string, dailyTrades: number, tradeLimit: number, lastTradeDate: string }> = {};
@@ -25,28 +25,58 @@ function getRandomTradeParams() {
     };
 }
 
+async function fetchActiveSeries(walletId: string) {
+    console.log("[+] Memeriksa daftar Series yang sedang ACTIVE dari Raven Market...");
+    try {
+        const response = await axios.get("https://testapi.raven.market/series", {
+            headers: {
+                'Content-Type': 'application/json',
+                'wallet_id': walletId,
+                'x-api-key': '632492f6eb36ad6ca17e49fabb2ef58541ad58d166de2e46d065dc9f75988'
+            }
+        });
+        
+        const activeSeries = response.data.filter((s: any) => s.status === 'ACTIVE').map((s: any) => s.id);
+        if (activeSeries.length > 0) {
+            VALID_SERIES_IDS = activeSeries;
+            console.log(`[✓] Berhasil memperbarui Active Series: [${activeSeries.join(', ')}]`);
+        } else {
+            console.log("[!] Tidak menemukan Series dengan status ACTIVE, menggunakan cache ID sebelumnya.");
+        }
+    } catch (e: any) {
+        console.error(`[X] Gagal mengambil API daftar Series:`, e.response?.data || e.message);
+    }
+}
+
 async function getMarketQuote(walletId: string, seriesId: any, side: any, quantity: any) {
     console.log(`[+] Mengambil harga quote dari Raven Market untuk ${side} ${quantity} (Series: ${seriesId})...`);
 
-    const response = await axios.post(`https://testapi.raven.market/quote`, {
-        series_id: seriesId,
-        trade_type: "BUY",
-        side: side,
-        quantity: quantity
-    }, {
-        headers: {
-            'Content-Type': 'application/json',
-            'wallet_id': walletId,
-            'x-api-key': '632492f6eb36ad6ca17e49fabb2ef58541ad58d166de2e46d065dc9f75988'
+    try {
+        const response = await axios.post(`https://testapi.raven.market/quote`, {
+            series_id: seriesId,
+            trade_type: "BUY",
+            side: side,
+            quantity: quantity
+        }, {
+            headers: {
+                'Content-Type': 'application/json',
+                'wallet_id': walletId,
+                'x-api-key': '632492f6eb36ad6ca17e49fabb2ef58541ad58d166de2e46d065dc9f75988'
+            }
+        });
+
+        if (!response.data || (!response.data.total_cost && response.data.total_cost !== 0)) {
+            console.error("[DEBUG] Raw Raven API Response:", JSON.stringify(response.data, null, 2));
+            throw new Error("Gagal mendapatkan harga dari Raven Market API");
         }
-    });
 
-    if (!response.data || (!response.data.total_cost && response.data.total_cost !== 0)) {
-        console.error("[DEBUG] Raw Raven API Response:", JSON.stringify(response.data, null, 2));
-        throw new Error("Gagal mendapatkan harga dari Raven Market API");
+        return { ...response.data, series_id: seriesId, side: side, quantity: quantity };
+    } catch (e: any) {
+        if (e.response && e.response.data) {
+            console.error("[DEBUG] Error Response dari getMarketQuote:", JSON.stringify(e.response.data));
+        }
+        throw e;
     }
-
-    return { ...response.data, series_id: seriesId, side: side, quantity: quantity };
 }
 
 async function executeTrade(quoteData: any, walletId: string) {
@@ -194,6 +224,12 @@ async function runAutoTrade() {
     // Loop tanpa batas untuk farming
     while (true) {
         console.log(`\n\n--- [ Memulai Putaran ke-${round} ] ---`);
+
+        // Fetch Series yang aktif di setiap awal putaran
+        const validAccount = accounts.find((a: any) => a.PARTY_ID && a.PRIVATE_KEY !== "hex");
+        if (validAccount) {
+            await fetchActiveSeries(validAccount.PARTY_ID);
+        }
 
         const today = new Date().toISOString().split('T')[0];
         let allAccountsLimited = true;
