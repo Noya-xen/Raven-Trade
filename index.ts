@@ -36,10 +36,21 @@ async function fetchActiveSeries(walletId: string) {
             }
         });
         
-        const activeSeries = response.data.filter((s: any) => s.status === 'ACTIVE').map((s: any) => s.id);
-        if (activeSeries.length > 0) {
+        const allActive = response.data.filter((s: any) => s.status === 'ACTIVE');
+        if (allActive.length > 0) {
+            // Urutkan berdasarkan waktu pembuatan (paling baru di atas)
+            allActive.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            
+            // Ambil tanggal pembuatan dari series paling terbaru (indeks 0)
+            const newestDate = new Date(allActive[0].created_at).toISOString().split('T')[0];
+            
+            // Saring dan hanya ambil ID yang dibuat pada tanggal yang sama dengan series paling terbaru
+            const activeSeries = allActive
+                .filter((s: any) => s.created_at.startsWith(newestDate))
+                .map((s: any) => s.id);
+
             VALID_SERIES_IDS = activeSeries;
-            console.log(`[✓] Berhasil memperbarui Active Series: [${activeSeries.join(', ')}]`);
+            console.log(`[✓] Berhasil memperbarui Active Series (Hanya Yang Paling Baru / Tanggal ${newestDate}): [${activeSeries.join(', ')}]`);
         } else {
             console.log("[!] Tidak menemukan Series dengan status ACTIVE, menggunakan cache ID sebelumnya.");
         }
